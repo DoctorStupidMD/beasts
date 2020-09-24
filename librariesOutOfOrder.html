@@ -51,8 +51,7 @@
         if(Array.isArray(libraryStorage[libraryName].argsArray) === false) {
           libraryStorage[libraryName].argsArray = [];
         }
-        // Map all elements in argsArray to a newly-declared array (even if the array is empty).
-        // Use recursion in callback to ensure that all dependencies are unwrapped if nested arrays.
+        // Map all elements in argsArray to a newly-declared array (even if the array is empty) and return recursively.
         var libraryDependencies = libraryStorage[libraryName].argsArray.map(function(dependency) {
           return librarySystem(dependency);
         });
