@@ -1,0 +1,153 @@
+<script src="./simpletest.js"></script>
+<script>
+
+// Prototype implementation:
+// (function() {
+//   var storage = {};
+//   function librarySystem(name, array, callback) {
+//     if (arguments.length > 1) {
+//       storage[name] = {
+//         callback: callback, 
+//         array: array,
+//         value: null
+//       };
+//     } else {
+//       if (storage[name].value === null) {
+//         var dependencies = storage[name].array.map(function(dependency) {
+//           return librarySystem(dependency);
+//         });
+//         storage[name].value = storage[name].callback.apply(null, dependencies);
+//       }
+//       return storage[name].value;
+//     }
+//   }
+// window.librarySystem = librarySystem;
+// })();
+
+// Test Descriptions:
+  // It should return a library given a library name.
+  // It should be able to handle multiple dependencies.
+  // It should be able to handle multiple nested dependencies. 
+  // It should return a library even if dependencies aren’t provided. 
+  // It should be able to create libraries out of order.
+  // It should only run the callback once for each library.
+
+(function() {
+  var libraryStorage = {};
+
+  function librarySystem(libraryName, argsArray, callback) {
+    // If library exists, create object with its properties for storage.
+    if (arguments.length > 1) {
+      libraryStorage[libraryName] = {
+        callback: callback,
+        argsArray: argsArray,
+        // Will remain null until returned (in which dependencies in argsArray will be mapped to a new array and applied to this value).
+        libraryValue: null
+      };
+    // If library doesn't exist, create new library and return. 
+    } else {
+      if (libraryStorage[libraryName].libraryValue === null) {
+        // Handle dependencies if provided and check to see if array; otherwise, set argsArray to empty array.
+        if(Array.isArray(libraryStorage[libraryName].argsArray) === false) {
+          libraryStorage[libraryName].argsArray = [];
+        }
+        // Map all elements in argsArray to a newly-declared array (even if the array is empty).
+        // Use recursion in callback to ensure that all dependencies are unwrapped if nested arrays.
+        var libraryDependencies = libraryStorage[libraryName].argsArray.map(function(dependency) {
+          return librarySystem(dependency);
+        });
+
+        // Set libraryValue from null to return value of callback, applying libraryDependencies.
+        libraryStorage[libraryName].libraryValue = libraryStorage[libraryName].callback.apply(null, libraryDependencies);
+      }
+
+      // Return libraryValue, now created and with applied libraryDependencies.
+      return libraryStorage[libraryName].libraryValue;
+    }
+  }
+
+  window.librarySystem = librarySystem;
+})();
+
+tests({
+  'It should store and return a library given a library name and callback.': function() {
+    function callback() {
+      return 'library';
+    }
+    librarySystem('libraryName', callback);
+    eq(librarySystem('libraryName', 'library'));
+  },
+  'It should be able to handle multiple dependencies.': function() {
+    librarySystem('workBlurb', ['name', 'company'], function(name, company) {
+      return name + ' works at ' + company;
+    });
+
+    librarySystem('name', [], function() {
+      return 'Gordon';
+    });
+
+    librarySystem('company', [], function() {
+      return 'Watch and Code';
+    });
+
+    eq(librarySystem('workBlurb'), 'Gordon works at Watch and Code');   
+  },
+  'It should be able to handle multiple nested dependencies.': function() {
+    librarySystem('workBlurb', [[['name']], ['company']], function(name, company) {
+      return name + ' works at ' + company;
+    });
+
+    librarySystem('name', [], function() {
+      return 'Gordon';
+    });
+
+    librarySystem('company', [], function() {
+      return 'Watch and Code';
+    });
+
+    eq(librarySystem('workBlurb'), 'Gordon works at Watch and Code');   
+  },
+  'It should return a library even if dependencies aren’t provided.': function() {
+    librarySystem('workBlurb', [], function(name, company) {
+      return 'Not much to see';
+    });
+
+    librarySystem('name', [], function() {
+      return 'Gordon';
+    });
+
+    librarySystem('company', [], function() {
+      return 'Watch and Code';
+    });
+
+    eq(librarySystem('workBlurb'), 'Not much to see');   
+  },
+  'It should be able to create libraries out of order.': function() {
+    librarySystem('workBlurb', ['name', 'company'], function(name, company) {
+      return name + ' works at ' + company;
+    });
+
+    librarySystem('name', [], function() {
+      return 'Gordon';
+    });
+
+    librarySystem('company', [], function() {
+      return 'Watch and Code';
+    });
+
+    eq(librarySystem('workBlurb'), 'Gordon works at Watch and Code');
+  },
+  'It should only run the callback once for each library.': function() {
+    var numberOfTimesCallbackHasRun = 0;
+    librarySystem('sampleLibrary', [], function() {
+      numberOfTimesCallbackHasRun++;
+    });
+    // Return twice.
+    librarySystem('sampleLibrary');
+    librarySystem('sampleLibrary');
+
+    eq(numberOfTimesCallbackHasRun, 1);
+  }
+});
+
+</script>
