@@ -36,7 +36,7 @@
   var libraryStorage = {};
 
   function librarySystem(libraryName, argsArray, callback) {
-    // If library exists, create object with its properties for storage.
+    // If library, create object with its properties for storage.
     if (arguments.length > 1) {
       libraryStorage[libraryName] = {
         callback: callback,
@@ -44,10 +44,10 @@
         // Will remain null until returned (in which dependencies in argsArray will be mapped to a new array and applied to this value).
         libraryValue: null
       };
-    // If library doesn't exist, create new library and return. 
+    // Use the library from storage.
     } else {
       if (libraryStorage[libraryName].libraryValue === null) {
-        // Handle dependencies if provided and check to see if array; otherwise, set argsArray to empty array.
+        // If argsArray is not an array, set to an empty array.
         if(Array.isArray(libraryStorage[libraryName].argsArray) === false) {
           libraryStorage[libraryName].argsArray = [];
         }
@@ -77,10 +77,6 @@ tests({
     eq(librarySystem('libraryName', 'library'));
   },
   'It should be able to handle multiple dependencies.': function() {
-    librarySystem('workBlurb', ['name', 'company'], function(name, company) {
-      return name + ' works at ' + company;
-    });
-
     librarySystem('name', [], function() {
       return 'Gordon';
     });
@@ -89,7 +85,11 @@ tests({
       return 'Watch and Code';
     });
 
-    eq(librarySystem('workBlurb'), 'Gordon works at Watch and Code');   
+    librarySystem('workBlurb', ['name', 'company'], function(name, company) {
+      return name + ' works at ' + company;
+    });
+
+    eq(librarySystem('workBlurb'), 'Gordon works at Watch and Code');    
   },
   'It should be able to handle multiple nested dependencies.': function() {
     librarySystem('workBlurb', [[['name']], ['company']], function(name, company) {
